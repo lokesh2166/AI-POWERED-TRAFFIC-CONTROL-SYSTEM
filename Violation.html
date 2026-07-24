@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Traffic control system — Live Dashboard</title>
+  <style>
+    :root{
+      /* Violet theme (from your Violation page) */
+      --violet-dark: #7D27E8;    /* header top */
+      --violet-light:#C44BF5;    /* header bottom */
+      --panel: #F5F3F7;          /* inner soft white panel */
+      --card-white: #FFFFFF;
+      --accent: #7D27E8;
+      --muted: #6b7280;
+      --btn-violet: #C44BF5;
+      --btn-blue: #5DA9FF;
+      --btn-gold: #D6A522;
+      --btn-purple: #7D27E8;
+      --logout: #FF573F;
+
+      --glass: rgba(255,255,255,0.85);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+
+    html,body{
+      height:100%;
+      width:100%;
+      margin:0;
+      overflow:hidden;
+      /* outside violet gradient */
+      background:linear-gradient(180deg,var(--violet-dark),var(--violet-light));
+      color:#0b1221;
+    }
+
+    .container{
+      max-width:100%;
+      width:100%;
+      margin:0;
+      padding:20px;
+    }
+
+    /* header */
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background:var(--panel);
+      padding:18px;
+      border-radius:14px;
+      box-shadow:0 8px 20px rgba(2,6,23,0.12);
+    }
+    .brand{font-weight:800;font-size:20px;padding-left:6px}
+    .header-right{display:flex;gap:12px;align-items:center}
+    .chip{padding:8px 12px;border-radius:999px;font-weight:700}
+    .chip.admin{
+      background:linear-gradient(90deg,var(--btn-violet),var(--btn-purple));
+      color:#fff;
+      box-shadow:0 8px 20px rgba(125,39,232,0.12);
+    }
+    .chip.logout{
+      background:linear-gradient(90deg,#ff9584,var(--logout));
+      color:#fff;
+      box-shadow:0 8px 20px rgba(255,87,63,0.12);
+    }
+
+    /* nav */
+    .nav{display:flex;gap:18px;margin:18px 0}
+    .tab{
+      background:var(--panel);
+      padding:12px 18px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      box-shadow:0 6px 16px rgba(2,6,23,0.08);
+      color:var(--violet-dark);
+      border:1px solid rgba(125,39,232,0.06);
+    }
+    .tab.active{
+      background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(243,236,255,0.95));
+      box-shadow:0 10px 24px rgba(125,39,232,0.12);
+      transform:translateY(-2px);
+      border:1px solid rgba(125,39,232,0.12);
+    }
+
+    /* main panel */
+    .panel{
+      background:var(--panel);
+      padding:18px;
+      border-radius:12px;
+      min-height:220px;
+      box-shadow: 0 8px 18px rgba(125,39,232,0.04);
+      border:1px solid rgba(125,39,232,0.03);
+    }
+    .panel h3{margin:6px 0 12px;color:var(--violet-dark);}
+
+    /* violations row */
+    .violations{display:flex;gap:18px;flex-wrap:wrap}
+    .v-btn{
+      padding:12px 20px;border-radius:12px;font-weight:800;cursor:pointer;border:none;min-width:160px;
+      color:#fff; box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+    }
+    .v-1{ background: linear-gradient(90deg,var(--btn-gold),#c08925); color:#1b132a; box-shadow:0 10px 28px rgba(214,165,34,0.10); }
+    .v-2{ background: linear-gradient(90deg,var(--btn-blue),#6f6fbf); color:#0d0810; box-shadow:0 10px 28px rgba(93,169,255,0.10); }
+    .v-3{ background: linear-gradient(90deg,var(--btn-purple),var(--btn-violet)); color:#fff; box-shadow:0 10px 28px rgba(125,39,232,0.12); }
+    .v-4{ background: linear-gradient(90deg,var(--btn-violet),#b84bd6); color:#fff; box-shadow:0 10px 28px rgba(196,75,245,0.12); }
+
+    /* live log */
+    .log{margin-top:16px;background:linear-gradient(180deg,#fff,#fbf7ff);padding:12px;border-radius:10px;max-height:220px;overflow:auto;border:1px solid rgba(125,39,232,0.04)}
+    .log-item{padding:8px;border-bottom:1px dashed rgba(0,0,0,0.05);font-size:14px}
+
+    /* side info */
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:12px}
+    .stats{display:flex;gap:12px;align-items:center}
+    .stat-card{
+      background:linear-gradient(180deg,var(--card-white),#f7f4ff);
+      padding:12px;border-radius:10px;min-width:140px;
+      box-shadow:0 6px 14px rgba(125,39,232,0.06);
+      border:1px solid rgba(125,39,232,0.04);
+    }
+    .stat-value{font-size:22px;font-weight:900;color:var(--violet-dark)}
+    .small{color:var(--muted);font-size:13px}
+
+    /* footer controls */
+    .controls{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .control-btn{
+      padding:10px 14px;border-radius:10px;border:none;
+      background:linear-gradient(90deg,var(--btn-violet),var(--btn-purple));
+      color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(125,39,232,0.12);
+    }
+    .control-btn.secondary{
+      background: linear-gradient(90deg,#ffffff,#f6f3ff);
+      color:var(--violet-dark); border:1px solid rgba(125,39,232,0.06);
+      box-shadow:0 6px 18px rgba(125,39,232,0.06);
+    }
+
+    /* responsive */
+    @media (max-width:900px){ .grid{grid-template-columns:1fr} .header{flex-wrap:wrap;gap:8px} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:16px">
+        <img src="img/OIP.webp" alt="banner" style="height:56px;border-radius:8px;object-fit:cover;box-shadow:0 6px 18px rgba(0,0,0,0.12)"/>
+        <div class="brand">Traffic control sysytem</div>
+      </div>
+      <div class="header-right">
+        <div class="chip admin">Admin</div>
+        <button class="chip logout" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <div class="nav" role="tablist" aria-label="Main navigation">
+      <div class="tab" data-tab="dashboard"onclick="window.location.href='dashboard.html'">Dashboard</div>
+      <div class="tab" data-tab="manual"onclick="window.location.href='manual.html'">Manual control</div>
+      <div class="tab active" data-tab="violation"onclick="window.location.href='Violation.html'">Violation</div>
+      <div class="tab" data-tab="activity"onclick="window.location.href='Activity.html'">Activity logs</div>
+    </div>
+
+    <div class="panel">
+      <h3>Violation Activities:</h3>
+
+      <div class="violations">
+        <button class="v-btn v-1" data-violation="Vehicle Look Up">Vehicle Look Up</button>
+        <button class="v-btn v-2" data-violation="Passenger Over Ride">passenger over ride</button>
+        <button class="v-btn v-3" data-violation="Drunk And Drive">Drunk And Drive</button>
+        <button class="v-btn v-4" data-violation="Without helmet">Without helmet</button>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="log" id="eventLog" aria-live="polite"></div>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+            <button class="control-btn" id="simulateBtn">Start Simulate</button>
+            <button class="control-btn secondary" id="stopSimBtn">Stop</button>
+            <div style="margin-left:auto;text-align:right">
+              <div class="small">Live time</div>
+              <div id="clock" style="font-weight:900;font-size:16px"></div>
+            </div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="stats">
+            <div class="stat-card">
+              <div class="small">Active violations (30s)</div>
+              <div class="stat-value" id="liveCount">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="small">Total events</div>
+              <div class="stat-value" id="totalCount">0</div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px" class="panel">
+            <div class="small">Quick actions</div>
+            <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+              <button class="tab" id="clearLog">Clear Log</button>
+              <button class="tab" id="exportLog">Export JSON</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple real-time UI: clicking violation buttons logs events; simulate mode adds random events.
+    const logEl = document.getElementById('eventLog');
+    const vButtons = document.querySelectorAll('.v-btn');
+    const liveCountEl = document.getElementById('liveCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const clockEl = document.getElementById('clock');
+
+    let events = []; // {ts, type}
+    const WINDOW_MS = 30_000; // 30s sliding window for "Active violations"
+
+    function renderLog(){
+      logEl.innerHTML = '';
+      events.slice().reverse().forEach(ev => {
+        const d = new Date(ev.ts);
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.textContent = `[${d.toLocaleTimeString()}] ${ev.type}`;
+        logEl.appendChild(item);
+      });
+    }
+
+    function pruneAndUpdate(){
+      const cutoff = Date.now() - WINDOW_MS;
+      const active = events.filter(e=>e.ts >= cutoff);
+      liveCountEl.textContent = active.length;
+      totalCountEl.textContent = events.length;
+      renderLog();
+    }
+
+    // attach click handlers
+    vButtons.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const type = b.getAttribute('data-violation') || b.textContent.trim();
+        const ev = {ts:Date.now(), type};
+        events.push(ev);
+        pruneAndUpdate();
+      });
+    });
+
+    // clock
+    function tick(){ clockEl.textContent = new Date().toLocaleTimeString(); }
+    setInterval(tick,1000); tick();
+
+    // simulation
+    let simInterval = null;
+    document.getElementById('simulateBtn').addEventListener('click', ()=>{
+      if(simInterval) return;
+      simInterval = setInterval(()=>{
+        // choose a random violation
+        const choices = ['Vehicle Look Up','passenger over ride','Drunk And Drive','Without helmet'];
+        const type = choices[Math.floor(Math.random()*choices.length)];
+        events.push({ts:Date.now(), type});
+        pruneAndUpdate();
+      }, 1200);
+    });
+    document.getElementById('stopSimBtn').addEventListener('click', ()=>{ if(simInterval){ clearInterval(simInterval); simInterval=null; } });
+
+    // highlight nav tabs
+    document.querySelectorAll('.tab[data-tab]').forEach(t=>{
+      t.addEventListener('click', ()=>{
+        document.querySelectorAll('.tab[data-tab]').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+      });
+    });
+
+    // clear/export
+    document.getElementById('clearLog').addEventListener('click', ()=>{ events=[]; pruneAndUpdate(); });
+    document.getElementById('exportLog').addEventListener('click', ()=>{
+      const dataStr = JSON.stringify(events, null, 2);
+      const blob = new Blob([dataStr], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'events.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // periodic pruning to update live count
+    setInterval(pruneAndUpdate, 1000);
+
+    // logout button
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      alert('Logged out (demo)');
+    });
+  </script>
+</body>
+</html>

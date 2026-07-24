@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Traffic Control — Manual Signal Override</title>
+<style>
+  /* ---------- Design tokens (violet theme applied) ---------- */
+  :root{
+    --violet-dark: #7D27E8;
+    --violet-light: #C44BF5;
+    --violet-soft: #E7D8FF;
+
+    --bg-1: #ffffff;
+    --bg-2: #ffffff;
+    --panel: #F5F3F7;              /* soft white panel */
+    --muted: #6b7280;
+    --glass: rgba(255,255,255,0.06);
+
+    --red: #ff5a67;
+    --yellow: #ffd23f;
+    --green: #2be08b;
+    --blue: #4b79ff;
+
+    --surface-radius: 14px;
+    --soft-shadow: 0 12px 30px rgba(11,13,26,0.28);
+    --card-shadow: 0 10px 20px rgba(16,24,40,0.08);
+    --focus: 0 0 0 6px rgba(125,39,232,0.10);
+    --ease: cubic-bezier(.2,.9,.25,1);
+
+    font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  /* ---------- Page layout ---------- */
+  html,body{height:100%;margin:0}
+  body{
+    /* OUTSIDE violet gradient */
+    background: linear-gradient(180deg,var(--violet-dark), var(--violet-light));
+    min-height:50vh;
+    display:flex;
+    align-items:stretch;
+    justify-content:center;
+    color:#0f1724;
+    padding:18px;
+  }
+
+  /* full-bleed app container (soft white inside) */
+  .app{
+    width:100%;
+    max-width:2000px;
+    height:calc(100vh - 36px);
+    background:linear-gradient(180deg, var(--panel), rgba(255,255,255,0.96));
+    border-radius:12px;
+    box-shadow: var(--soft-shadow);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  /* ---------- Header / nav (violet accented) ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px;
+    background: linear-gradient(90deg,var(--violet-dark), var(--violet-light));
+    color: white;
+    border-bottom:1px solid rgba(16,24,40,0.04);
+    box-shadow: 0 6px 18px rgba(11,13,26,0.04);
+  }
+  .brand { display:flex; gap:14px; align-items:center; }
+  .logo {
+    width:44px;height:44px;border-radius:10px;
+    background:linear-gradient(135deg,var(--violet-dark),var(--violet-light));
+    box-shadow:var(--card-shadow);
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
+  }
+  h1{font-size:18px;margin:0;color:#fff}
+
+  .top-actions{display:flex;gap:12px;align-items:center}
+  .pill{
+    padding:8px 14px;border-radius:999px;
+    background:#fff;
+    color:var(--violet-dark);
+    border:1px solid rgba(125,39,232,0.12);
+    cursor:pointer;user-select:none;
+    transition:transform .18s var(--ease), box-shadow .18s var(--ease);
+    box-shadow: 0 6px 14px rgba(125,39,232,0.06);
+  }
+  .pill:active{transform:translateY(1px)}
+  .pill.logout{ background: linear-gradient(90deg,#ffdbf0,#ffd6ff); color:#7a1f00; border-color: rgba(255,87,63,0.08); }
+
+  nav.row{
+    display:flex;gap:14px;padding:18px 28px;background:transparent;
+    align-items:center;
+  }
+  .nav-btn{
+    position:relative;
+    padding:12px 28px;border-radius:12px;background:#fff;
+    border:none;cursor:pointer;
+    box-shadow: 0 8px 18px rgba(125,39,232,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+    transition:transform .22s var(--ease), box-shadow .22s var(--ease);
+    font-weight:600;color:var(--violet-dark);
+  }
+  .nav-btn:hover{ transform:translateY(-6px); box-shadow: 0 18px 40px rgba(236, 236, 237, 0.12); }
+  .nav-btn:focus{ outline:none; box-shadow: var(--focus); }
+
+  /* small nav entrance animation */
+  .nav-btn[data-animate="true"]{ transform: translateY(-18px); opacity:0; animation:navIn .6s forwards var(--ease); }
+  .nav-btn[data-delay="0"]{ animation-delay:.05s }
+  .nav-btn[data-delay="1"]{ animation-delay:.15s }
+  .nav-btn[data-delay="2"]{ animation-delay:.25s }
+  .nav-btn[data-delay="3"]{ animation-delay:.35s }
+  @keyframes navIn { to { transform:translateY(0); opacity:1 } }
+
+  /* ---------- Content area ---------- */
+  main.content{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    padding:28px;
+    overflow:auto;
+  }
+
+  .page-title{
+    display:flex;align-items:flex-start;gap:18px;justify-content:space-between;
+  }
+  .meta{
+    color:var(--muted);font-size:14px;margin-top:6px;
+  }
+
+  /* ---------- Control panel (center) ---------- */
+  .controls {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,255,0.98));
+    border-radius:var(--surface-radius);
+    padding:26px;
+    box-shadow:0 10px 24px rgba(125,39,232,0.06); /* violet-tinted soft shadow */
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .signals {
+    display:flex;
+    gap:22px;
+    align-items:center;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+
+  /* Signal button base (kept original colors) */
+  .signal {
+    --size:170px;
+    width:var(--size);
+    height:56px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 18px;
+    border-radius:999px;
+    font-weight:700;
+    color:white;
+    cursor:pointer;
+    border:none;
+    box-shadow: 0 10px 30px rgba(11,13,26,0.06);
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease), filter .18s;
+    position:relative;
+    overflow:visible;
+  }
+
+  .signal:focus{ outline:none; box-shadow:var(--focus) }
+
+  /* specific colors (unchanged) */
+  .signal.red{ background: linear-gradient(90deg, #ff7b7b, var(--red)); }
+  .signal.yellow{ background: linear-gradient(90deg, #ffeaa3, var(--yellow)); color:#10202b; }
+  .signal.green{ background: linear-gradient(90deg, #6af0bf, var(--green)); color:#063020; }
+  .signal.auto{ background: linear-gradient(90deg, #7f9bff, var(--blue)); }
+
+  /* icon circle */
+  .signal .dot{
+    width:14px;height:14px;border-radius:50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.25);
+    flex:0 0 14px;
+  }
+  .signal.red .dot{ background:#ff3d45; box-shadow:0 6px 18px rgba(255,61,69,0.18); }
+  .signal.yellow .dot{ background:#ffbf22; box-shadow:0 6px 18px rgba(255,191,34,0.16); }
+  .signal.green .dot{ background:#06d17d; box-shadow:0 6px 18px rgba(6,209,125,0.14); }
+  .signal.auto .dot{ background:#1f60ff; box-shadow:0 6px 18px rgba(31,96,255,0.16); }
+
+  /* pulse ring when active */
+  .signal.active::after{
+    content:''; position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    width:44px;height:44px;border-radius:50%;
+    background:transparent;
+    box-shadow: 0 0 0 6px rgba(125,39,232,0.03), 0 0 36px rgba(125,39,232,0.04);
+    animation: none;
+  }
+
+  .signal.pulse-red::before,
+  .signal.pulse-yellow::before,
+  .signal.pulse-green::before,
+  .signal.pulse-blue::before{
+    content:''; position:absolute; left:10px; top:50%; transform:translate(-50%,-50%);
+    width:14px;height:14px;border-radius:50%; opacity:0.6; filter: blur(4px);
+    animation: pulse 1.6s infinite; z-index:0;
+  }
+  .signal.pulse-red::before{ background: rgba(255,93,100,0.18); }
+  .signal.pulse-yellow::before{ background: rgba(255,199,55,0.18); }
+  .signal.pulse-green::before{ background: rgba(24,214,139,0.18); }
+  .signal.pulse-blue::before{ background: rgba(75,121,255,0.18); }
+  @keyframes pulse { 0%{ transform:translate(-50%,-50%) scale(.9); opacity:0.5 } 70%{ transform:translate(-50%,-50%) scale(2.2); opacity:0 } 100%{ opacity:0 } }
+
+  .signal:hover{ transform:translateY(-6px) scale(1.02); box-shadow: 0 20px 46px rgba(8,18,50,0.12); }
+
+  .signal .label { display:flex;flex-direction:column; gap:2px; text-align:left; z-index:2; }
+  .signal .label .small { font-weight:600; font-size:11px; opacity:0.9; letter-spacing:.6px; text-transform:uppercase; }
+  .signal .label .big { font-size:14px; }
+
+  /* ---------- Status panel (white card with violet accent) ---------- */
+  .status {
+    background:var(--white-card);
+    border-radius:10px;
+    padding:12px 16px;
+    border:1px solid rgba(125,39,232,0.06);
+    display:flex;gap:16px;align-items:center;
+    box-shadow:0 8px 20px rgba(125,39,232,0.04);
+  }
+  .status .meta { font-size:13px;color:var(--muted); }
+  .status .badge {
+    padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,#f5eeff,#efe6ff);
+    font-weight:700; color:var(--violet-dark);
+    box-shadow: 0 6px 18px rgba(125,39,232,0.06);
+  }
+
+  .log {
+    margin-top:8px;
+    background: linear-gradient(180deg,#fbfdff,#f7fbff);
+    border-radius:10px;
+    padding:12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    font-size:13px;
+    color:#0f1724;
+    border:1px solid rgba(16,24,40,0.03);
+    max-height:120px; overflow:auto;
+  }
+
+  .actions { display:flex; gap:12px; align-items:center; justify-content:flex-end; }
+  .small-btn{ padding:8px 12px;border-radius:8px;background:transparent;border:1px solid rgba(16,24,40,0.06);cursor:pointer }
+  .small-btn:focus{ box-shadow:var(--focus); outline:none }
+
+  /* responsive */
+  @media (max-width:940px){
+    .signals{ justify-content:center }
+    .signal{ --size: calc(50vw - 48px); max-width:320px; width:100% }
+  }
+
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Traffic control dashboard">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">T</div>
+        <div>
+          <h1>Traffic control system</h1>
+          <div class="meta" style="margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="top-actions" role="toolbar" aria-label="Top actions">
+        <button class="pill" id="adminBtn" title="Admin">Admin</button>
+        <button class="pill logout" id="logoutBtn" title="Logout" onclick="window.location.href='login.html'">Logout</button>
+      </div>
+    </header>
+
+    <nav class="row" aria-label="Primary navigation">
+      <button class="nav-btn" data-animate="true" data-delay="0" onclick="window.location.href='dashboard.html'">DashBoard</button>
+      <button class="nav-btn" data-animate="true" data-delay="1" onclick="window.location.href='manual.html'">Manual Control</button>
+      <button class="nav-btn" data-animate="true" data-delay="2" onclick="window.location.href='Violation.html'">Violations</button>
+      <button class="nav-btn" data-animate="true" data-delay="3" onclick="window.location.href='Activity.html'">Activity logs</button>
+    </nav>
+
+    <main class="content">
+      <div class="page-title">
+        <div>
+          <h2 style="margin:0">Manual Signal Override</h2>
+          <div class="meta">Emergency control for traffic signal — choose a manual override</div>
+        </div>
+
+        <div class="actions" aria-hidden="true">
+          <button class="small-btn" id="resetBtn" title="Reset">Reset</button>
+          <button class="small-btn" id="autoBtn" title="Set Automatic">Auto</button>
+        </div>
+      </div>
+
+      <section class="controls" aria-label="Signal controls">
+        <div class="signals" role="list">
+          <!-- Red -->
+          <button class="signal red" id="redSignal" role="listitem" aria-pressed="false" aria-label="Red signal — set red">
+            <div class="dot" aria-hidden="true"></div>
+            <div class="label">
+              <div class="small">Red Signal</div>
+              <div class="big">STOP</div>
+            </div>
+          </button>
+
+          <!-- Yellow -->
+          <button class="signal yellow" id="yellowSignal" role="listitem" aria-pressed="false" aria-label="Yellow signal — caution">
+            <div class="dot" aria-hidden="true"></div>
+            <div class="label">
+              <div class="small">Yellow Signal</div>
+              <div class="big">CAUTION</div>
+            </div>
+          </button>
+
+          <!-- Green -->
+          <button class="signal green" id="greenSignal" role="listitem" aria-pressed="false" aria-label="Green signal — go">
+            <div class="dot" aria-hidden="true"></div>
+            <div class="label">
+              <div class="small">Green Signal</div>
+              <div class="big">GO</div>
+            </div>
+          </button>
+
+          <!-- Auto -->
+          <button class="signal auto" id="autoSignal" role="listitem" aria-pressed="false" aria-label="Auto mode">
+            <div class="dot" aria-hidden="true"></div>
+            <div class="label">
+              <div class="small">Auto Mode</div>
+              <div class="big">AUTOMATIC</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="status" aria-live="polite" aria-atomic="true">
+          <div>
+            <div style="font-size:13px;color:#556077">Current mode</div>
+            <div class="badge" id="currentMode">AUTOMATIC</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;color:#556077">Last Override</div>
+            <div id="lastOverride" style="font-weight:700">NONE</div>
+            <div class="log" id="eventLog" aria-label="Event log">[System] Automatic control active.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+/* ---------- Interaction logic (unchanged) ---------- */
+(function(){
+  const redBtn = document.getElementById('redSignal');
+  const yellowBtn = document.getElementById('yellowSignal');
+  const greenBtn = document.getElementById('greenSignal');
+  const autoBtnEl = document.getElementById('autoSignal');
+
+  const currentMode = document.getElementById('currentMode');
+  const lastOverride = document.getElementById('lastOverride');
+  const eventLog = document.getElementById('eventLog');
+
+  const allSignals = [redBtn, yellowBtn, greenBtn, autoBtnEl];
+
+  function pushLog(text){
+    const time = new Date();
+    const stamp = time.toLocaleTimeString();
+    const line = `[${stamp}] ${text}`;
+    eventLog.textContent = line + '\n' + eventLog.textContent;
+  }
+
+  function setActive(clickedBtn, modeLabel){
+    allSignals.forEach(b=>{
+      b.classList.remove('active','pulse-red','pulse-yellow','pulse-green','pulse-blue');
+      b.setAttribute('aria-pressed','false');
+    });
+
+    clickedBtn.classList.add('active');
+    const id = clickedBtn.id;
+    if(id === 'redSignal') clickedBtn.classList.add('pulse-red');
+    if(id === 'yellowSignal') clickedBtn.classList.add('pulse-yellow');
+    if(id === 'greenSignal') clickedBtn.classList.add('pulse-green');
+    if(id === 'autoSignal') clickedBtn.classList.add('pulse-blue');
+    clickedBtn.setAttribute('aria-pressed','true');
+
+    clickedBtn.animate([
+      { transform: 'translateY(0) scale(1)' },
+      { transform: 'translateY(-8px) scale(1.04)' },
+      { transform: 'translateY(0) scale(1)' }
+    ], { duration: 280, easing: 'cubic-bezier(.2,.9,.25,1)' });
+
+    currentMode.textContent = modeLabel;
+    lastOverride.textContent = modeLabel === 'AUTOMATIC' ? 'NONE' : modeLabel;
+    pushLog(`Manual override: ${modeLabel}`);
+  }
+
+  redBtn.addEventListener('click', ()=> setActive(redBtn, 'RED'));
+  yellowBtn.addEventListener('click', ()=> setActive(yellowBtn, 'YELLOW'));
+  greenBtn.addEventListener('click', ()=> setActive(greenBtn, 'GREEN'));
+  autoBtnEl.addEventListener('click', ()=> setActive(autoBtnEl, 'AUTOMATIC'));
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if(e.key === '1') redBtn.click();
+    if(e.key === '2') yellowBtn.click();
+    if(e.key === '3') greenBtn.click();
+    if(e.key === '4') autoBtnEl.click();
+  });
+
+  window.addEventListener('load', ()=>{
+    const signals = document.querySelectorAll('.signal');
+    signals.forEach((s, i) => {
+      s.style.opacity = 0;
+      s.style.transform = 'translateY(22px) scale(.98)';
+      setTimeout(()=> {
+        s.style.transition = 'transform .48s cubic-bezier(.2,.9,.25,1), opacity .48s';
+        s.style.opacity = 1;
+        s.style.transform = 'translateY(0) scale(1)';
+      }, 120 + i*90);
+    });
+  });
+
+  document.getElementById('resetBtn')?.addEventListener('click', ()=> {
+    setActive(autoBtnEl,'AUTOMATIC');
+    pushLog('System reset to automatic');
+  });
+  document.getElementById('autoBtn')?.addEventListener('click', ()=> {
+    setActive(autoBtnEl,'AUTOMATIC');
+    pushLog('Switched to automatic mode');
+  });
+
+  allSignals.forEach(b=>{
+    b.addEventListener('focus', ()=> b.style.boxShadow = 'var(--focus)');
+    b.addEventListener('blur', ()=> b.style.boxShadow = '');
+  });
+
+  setTimeout(()=> setActive(autoBtnEl, 'AUTOMATIC'), 600);
+
+})();
+</script>
+</body>
+</html>

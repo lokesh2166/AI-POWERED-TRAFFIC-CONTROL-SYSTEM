@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Realtime Vehicle Counter — East mirrored to Total</title>
+<style>
+  body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#0f1724;color:#e6eef8;margin:20px}
+  .wrap{max-width:900px;margin:auto;display:grid;grid-template-columns:640px 1fr;gap:20px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.05);padding:14px;border-radius:10px}
+  video{width:640px;height:360px;border-radius:8px;background:#000;display:block;margin:auto}
+  canvas{display:block;margin:10px auto;border-radius:8px}
+  .btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+  .blue{background:#2563eb;color:#fff}
+  .red{background:#e74c3c;color:#fff}
+  .gray{background:#6b7280;color:#fff}
+  .small{font-size:13px;color:#9fb3d9}
+  .log{max-height:240px;overflow:auto;font-size:13px;background:rgba(0,0,0,0.3);padding:8px;border-radius:6px}
+  .log-item{padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.05)}
+  .overlay-box { position: absolute; right: 18px; top: 18px; background: rgba(0,0,0,0.45); color:#fff; padding:6px 10px; border-radius:8px; font-weight:700; font-size:14px; }
+</style>
+
+<!-- TFJS & COCO-SSD -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.8.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+</head>
+<body>
+<h1 style="text-align:center;margin-bottom:15px;">Realtime Vehicle Counter — East mirrored to Total</h1>
+
+<div class="wrap" style="position:relative">
+  <div class="card" style="position:relative">
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    <canvas id="cameraCanvas" width="640" height="360"></canvas>
+
+    <!-- small overlay showing numbers -->
+    <div id="overlay" class="overlay-box">Frame: 0 — East: 0 — Total: 0</div>
+
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button id="startBtn" class="btn blue">Start Camera</button>
+      <button id="stopBtn" class="btn red">Stop</button>
+      <button id="resetBtn" class="btn gray">Reset Counts</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="small">East Lane Total (saved in browser)</div>
+      <h2 id="eastCount">0</h2>
+      <div class="small" style="margin-top:8px">Total Vehicles (mirrored to East)</div>
+      <h2 id="totalCount">0</h2>
+      <div class="small" style="margin-top:8px">30s Flow (East)</div>
+      <h2 id="flow30s">0</h2>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>Event Log</strong>
+    <div class="small">Vehicle count events (latest first)</div>
+    <div id="log" class="log" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const VEHICLE_LABELS = new Set(['car','truck','bus','motorcycle']);
+  const VIDEO_W=640, VIDEO_H=360, CROSS_LINE_Y=Math.floor(VIDEO_H*0.75);
+  const DETECTION_INTERVAL=180, MAX_TRACK_AGE=8, ROLLING_MS=30*1000;
+
+  // storage keys for east lane
+  const EAST_KEY = 'east_count';
+  const TOTAL_KEY = 'total_count';
+  const UPDATE_TS = 'vehicle_update_ts';
+
+  const video=document.getElementById('cameraVideo');
+  const canvas=document.getElementById('cameraCanvas');
+  const ctx=canvas.getContext('2d');
+  const overlay=document.getElementById('overlay');
+  const eastEl=document.getElementById('eastCount');
+  const totalEl=document.getElementById('totalCount');
+  const flowEl=document.getElementById('flow30s');
+  const logDiv=document.getElementById('log');
+  const startBtn=document.getElementById('startBtn');
+  const stopBtn=document.getElementById('stopBtn');
+  const resetBtn=document.getElementById('resetBtn');
+
+  let stream=null, model=null, running=false;
+  let frameCount=0, nextId=1, tracks=[];
+  let countedEvents=[];
+  let lastFrameDetected = 0;
+
+  function readCount(key){ return parseInt(localStorage.getItem(key)||'0',10)||0; }
+  function writeCount(key,v){ localStorage.setItem(key,String(v)); localStorage.setItem(UPDATE_TS,Date.now()); }
+
+  // initialize counts
+  let eastTotal = readCount(EAST_KEY);
+  let totalVehicles = readCount(TOTAL_KEY);
+
+  function logMsg(msg){
+    const el=document.createElement('div');
+    el.className='log-item';
+    el.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+    logDiv.prepend(el);
+  }
+
+  function updateUI(){
+    eastEl.textContent = eastTotal.toLocaleString();
+    totalEl.textContent = totalVehicles.toLocaleString();
+    const cutoff = Date.now() - ROLLING_MS;
+    countedEvents = countedEvents.filter(e=>e.ts >= cutoff);
+    flowEl.textContent = countedEvents.length;
+    overlay.textContent = `Frame: ${lastFrameDetected} — East: ${eastTotal} — Total: ${totalVehicles}`;
+  }
+
+  // Mirror behavior: when east increments, set total = east (mirror)
+  function addEastCount(){
+    eastTotal = (eastTotal||0) + 1;
+    // mirror total to east value
+    totalVehicles = eastTotal;
+    countedEvents.push({ts:Date.now()});
+    writeCount(EAST_KEY, eastTotal);
+    writeCount(TOTAL_KEY, totalVehicles);
+    updateUI();
+    logMsg(`East counted (mirrored) — East: ${eastTotal}`);
+  }
+
+  // optional: other lanes can be tracked but we will NOT change total (mirror behavior)
+  function addOtherCount(){
+    logMsg('Other lane crossed (ignored for total mirror)');
+  }
+
+  function isEastY(yc){
+    // define East as topmost 25% of the frame (y center < 25% height)
+    return (yc >= 0) && (yc < VIDEO_H * 0.25);
+  }
+
+  function iou(a,b){
+    const ax1=a[0],ay1=a[1],ax2=a[0]+a[2],ay2=a[1]+a[3];
+    const bx1=b[0],by1=b[1],bx2=b[0]+b[2],by2=b[1]+b[3];
+    const ix1=Math.max(ax1,bx1),iy1=Math.max(ay1,by1);
+    const ix2=Math.min(ax2,bx2),iy2=Math.min(ay2,by2);
+    const iw=Math.max(0,ix2-ix1),ih=Math.max(0,iy2-iy1);
+    const inter=iw*ih;
+    return inter/(a[2]*a[3]+b[2]*b[3]-inter+1e-6);
+  }
+
+  function matchDet(tracks,dets){
+    const usedDet=new Set(), usedT=new Set(),pairs=[];
+    for(let t=0;t<tracks.length;t++){
+      for(let d=0;d<dets.length;d++){
+        const score=iou([tracks[t].x,tracks[t].y,tracks[t].w,tracks[t].h],dets[d].bbox);
+        if(score>0.03)pairs.push({t,d,score});
+      }
+    }
+    pairs.sort((a,b)=>b.score-a.score);
+    const matches=[];
+    for(const p of pairs){
+      if(usedT.has(p.t)||usedDet.has(p.d))continue;
+      usedT.add(p.t);usedDet.add(p.d);matches.push(p);
+    }
+    return {matches,usedDet};
+  }
+
+  async function detectLoop(){
+    if(!model) return;
+    running=true;
+    while(running && stream){
+      await detectFrame();
+      await new Promise(r=>setTimeout(r,DETECTION_INTERVAL));
+    }
+  }
+
+  async function detectFrame(){
+    if(video.readyState<2) return;
+    frameCount++;
+    ctx.clearRect(0,0,VIDEO_W,VIDEO_H);
+    ctx.drawImage(video,0,0,VIDEO_W,VIDEO_H);
+
+    const preds = await model.detect(video,10);
+    const vehicles = preds.filter(p=>VEHICLE_LABELS.has(p.class) && p.score>0.45);
+    lastFrameDetected = vehicles.length; // show how many in frame this frame
+
+    const {matches,usedDet} = matchDet(tracks,vehicles);
+
+    for(const m of matches){
+      const det=vehicles[m.d], b=det.bbox, cx=b[0]+b[2]/2, cy=b[1]+b[3]/2, t=tracks[m.t];
+      t.prevY=t.yc; t.x=b[0]; t.y=b[1]; t.w=b[2]; t.h=b[3]; t.yc=cy; t.last=frameCount;
+    }
+
+    for(let d=0; d<vehicles.length; d++){
+      if(usedDet.has(d)) continue;
+      const b=vehicles[d].bbox;
+      tracks.push({id:nextId++, x:b[0], y:b[1], w:b[2], h:b[3], yc:b[1]+b[3]/2, prevY:null, counted:false, last:frameCount});
+    }
+
+    tracks = tracks.filter(t => (frameCount - t.last) <= MAX_TRACK_AGE);
+
+    for(const t of tracks){
+      ctx.strokeStyle='#00ff88'; ctx.lineWidth=2; ctx.strokeRect(t.x,t.y,t.w,t.h);
+      ctx.font='12px sans-serif'; ctx.fillStyle='#00ff88'; ctx.fillText(`#${t.id}`, t.x+3, t.y+12);
+      if(!t.counted){
+        const crossed = (t.prevY!=null && t.prevY <= CROSS_LINE_Y && t.yc > CROSS_LINE_Y);
+        if(crossed){
+          t.counted = true;
+          if(isEastY(t.yc)){
+            addEastCount();           // east -> increments east and mirrors total
+          } else {
+            addOtherCount();          // other lanes — we don't change total (mirror behavior)
+          }
+        }
+      }
+    }
+
+    // draw the cross line
+    ctx.strokeStyle='#ffeb3b'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(0,CROSS_LINE_Y); ctx.lineTo(VIDEO_W,CROSS_LINE_Y); ctx.stroke();
+
+    // draw overlay numbers on the canvas as well
+    ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(VIDEO_W-200,8,190,58);
+    ctx.fillStyle='#fff'; ctx.font='14px sans-serif';
+    ctx.fillText(`Frame: ${lastFrameDetected}`, VIDEO_W-190, 30);
+    ctx.fillText(`East: ${eastTotal}`, VIDEO_W-190, 50);
+    ctx.fillText(`Total: ${totalVehicles}`, VIDEO_W-190, 70);
+    updateUI();
+  }
+
+  startBtn.onclick=async()=>{
+    if(stream) return;
+    stream = await navigator.mediaDevices.getUserMedia({video:{width:VIDEO_W,height:VIDEO_H}});
+    video.srcObject = stream;
+    if(!model){ logMsg('Loading model...'); model = await cocoSsd.load(); logMsg('Model loaded'); }
+    tracks=[]; nextId=1; frameCount=0;
+    eastTotal = readCount(EAST_KEY);
+    totalVehicles = readCount(TOTAL_KEY);
+    updateUI();
+    detectLoop(); logMsg('Camera started');
+  };
+
+  stopBtn.onclick=()=>{
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    running=false; ctx.clearRect(0,0,canvas.width,canvas.height); logMsg('Camera stopped');
+  };
+
+  resetBtn.onclick=()=>{
+    if(confirm('Reset all counts?')){
+      eastTotal=0; totalVehicles=0;
+      writeCount(EAST_KEY,0);
+      writeCount(TOTAL_KEY,0);
+      countedEvents=[];
+      updateUI();
+      logMsg('Counts reset.');
+    }
+  };
+
+  // external sync between tabs
+  window.addEventListener('storage', (e) => {
+    if([EAST_KEY,TOTAL_KEY,UPDATE_TS].includes(e.key)){
+      eastTotal = readCount(EAST_KEY);
+      totalVehicles = readCount(TOTAL_KEY);
+      updateUI();
+    }
+  });
+
+  // init UI
+  eastTotal = readCount(EAST_KEY);
+  totalVehicles = readCount(TOTAL_KEY);
+  updateUI();
+})();
+</script>
+</body>
+</html>
+

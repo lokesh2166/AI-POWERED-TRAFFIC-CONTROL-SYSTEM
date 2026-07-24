@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Traffic Control — Activity Logs</title>
+
+<style>
+:root{
+  --violet-dark:#7D27E8;
+  --violet-light:#C44BF5;
+  --panel:#F5F3F7;
+  --white:#FFFFFF;
+  --muted:#6b7280;
+  --shadow:0 6px 20px rgba(125,39,232,0.15);
+  --radius:14px;
+
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  overflow:hidden;
+  background:linear-gradient(180deg,var(--violet-dark),var(--violet-light));
+}
+
+.app{
+  width:100%;
+  height:100%;
+  padding:24px;
+  overflow:auto;
+  box-sizing:border-box;
+}
+
+/* HEADER */
+.header{
+  background:var(--panel);
+  padding:18px 24px;
+  border-radius:var(--radius);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:var(--shadow);
+}
+.brand{font-size:22px;font-weight:800;color:#2d1b56;}
+.actions{display:flex;gap:12px;}
+.chip{
+  padding:8px 14px;border-radius:20px;font-weight:700;cursor:pointer;border:none;
+}
+.chip.admin{
+  background:#E7D8FF;
+  color:var(--violet-dark);
+}
+.chip.logout{
+  background:linear-gradient(90deg,#ff9584,#FF573F);
+  color:white;
+}
+
+/* NAV BAR (same as your previous pages) */
+.nav{
+  display:flex;
+  gap:18px;
+  margin:20px 0;
+}
+.nav-btn{
+  background:#ffffff;
+  padding:12px 18px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:700;
+  color:#2d1b56;
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow:0 6px 16px rgba(2,6,23,0.08);
+}
+.nav-btn:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 22px rgba(125,39,232,0.18);
+}
+.nav-btn.active{
+  background:linear-gradient(180deg,#ffffff,#f3eaff);
+  box-shadow:0 10px 24px rgba(125,39,232,0.20);
+  border:1px solid rgba(125,39,232,0.25);
+  transform:translateY(-2px);
+}
+
+/* PANEL */
+.panel{
+  background:var(--panel);
+  padding:22px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.panel h2{
+  margin:0 0 18px;
+  color:#2d1b56;
+}
+
+/* TOOLS */
+.tools{
+  display:flex;
+  gap:12px;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+}
+.input{
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,0.1);
+  font-size:14px;
+}
+.btn{
+  padding:10px 16px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:700;
+  color:white;
+  background:linear-gradient(90deg,var(--violet-dark),var(--violet-light));
+  box-shadow:0 3px 12px rgba(125,39,232,0.18);
+}
+.btn.small{padding:8px 12px;font-size:13px}
+
+/* LOG BOX */
+.log-box{
+  background:linear-gradient(180deg,#ffffff,#faf7ff);
+  border:1px solid rgba(125,39,232,0.12);
+  border-radius:12px;
+  padding:14px;
+  height:400px;
+  overflow:auto;
+  box-shadow:0 6px 16px rgba(125,39,232,0.10);
+}
+.log-item{
+  padding:10px 14px;
+  border-bottom:1px dashed rgba(0,0,0,0.08);
+  font-size:14px;
+  color:#28223c;
+}
+.log-item time{
+  font-size:12px;
+  color:var(--muted);
+  margin-right:10px;
+}
+
+@media(max-width:700px){
+  .tools{flex-direction:column;}
+  .nav{flex-wrap:wrap;}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">Traffic Control — Activity Logs</div>
+    <div class="actions">
+      <div class="chip admin">Admin</div>
+      <div class="chip logout" onclick="window.location.href='login.html'">Logout</div>
+    </div>
+  </div>
+
+  <!-- NAV BAR (added now) -->
+  <div class="nav">
+    <button class="nav-btn" onclick="window.location.href='dashboard.html'">Dashboard</button>
+    <button class="nav-btn" onclick="window.location.href='manual.html'">Manual Control</button>
+    <button class="nav-btn" onclick="window.location.href='Violation.html'">Violation</button>
+    <button class="nav-btn active">Activity Logs</button>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+    <h2>Live System Activity Feed</h2>
+
+    <div class="tools">
+      <input type="text" id="searchBox" class="input" placeholder="Search logs...">
+
+      <select id="filterBox" class="input">
+        <option value="all">All</option>
+        <option value="INFO">Info</option>
+        <option value="WARNING">Warning</option>
+        <option value="ERROR">Error</option>
+        <option value="SECURITY">Security</option>
+      </select>
+
+      <button class="btn small" id="clearLog">Clear Logs</button>
+      <button class="btn small" id="downloadBtn">Download JSON</button>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- ACTIVITY LOG ENGINE ---------------- */
+let logs = [];
+
+function addLog(type, message){
+  const entry = {
+    time: new Date().toLocaleTimeString(),
+    type,
+    message
+  };
+  logs.push(entry);
+  renderLogs();
+}
+
+function renderLogs(){
+  const box = document.getElementById("logBox");
+  const search = document.getElementById("searchBox").value.toLowerCase();
+  const filter = document.getElementById("filterBox").value;
+
+  box.innerHTML = '';
+
+  logs
+    .filter(l =>
+      (filter==="all" || l.type===filter) &&
+      (l.message.toLowerCase().includes(search) || l.type.toLowerCase().includes(search))
+    )
+    .forEach(l=>{
+      const div = document.createElement("div");
+      div.className="log-item";
+      div.innerHTML=`<time>[${l.time}]</time><strong>${l.type}:</strong> ${l.message}`;
+      box.appendChild(div);
+    });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+/* controls */
+document.getElementById("clearLog").onclick = ()=>{ logs=[]; renderLogs(); };
+
+document.getElementById("downloadBtn").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(logs,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "activity_logs.json"; a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById("searchBox").oninput = renderLogs;
+document.getElementById("filterBox").onchange = renderLogs;
+
+/* sample auto logs (remove in production) */
+setInterval(()=>{
+  const types=["INFO","WARNING","ERROR","SECURITY"];
+  const msgs=[
+    "Dashboard refreshed",
+    "Manual override triggered",
+    "Violation detected",
+    "Camera disconnected",
+    "Camera reconnected",
+    "User logged in",
+    "Unauthorized attempt blocked",
+    "Cache cleared"
+  ];
+  const t=types[Math.floor(Math.random()*types.length)];
+  const m=msgs[Math.floor(Math.random()*msgs.length)];
+  addLog(t,m);
+},2000);
+
+addLog("INFO","Activity Log System started.");
+</script>
+
+</body>
+</html>

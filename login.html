@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Traffic control system — Login popup</title>
+<style>
+  /* ------- EXACT COLOR PALETTE FROM YOUR SCREENSHOT ------- */
+  :root{
+    /* Background gradient from screenshot */
+    --bg-top: #7D27E8;       /* main purple */
+    --bg-bottom: #C44BF5;    /* lighter purple */
+
+    /* Card background */
+    --card-bg: rgba(255,255,255,0.97);
+
+    /* Text + Neutral */
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+
+    /* Input focus violet */
+    --focus-violet: #7D27E8;
+
+    /* Button gradient (blue → violet from screenshot) */
+    --btn1: #5DA9FF;
+    --btn2: #7D27E8;
+
+    /* Success & error */
+    --success: #16a34a;
+    --error: #ef4444;
+
+    /* Shadows */
+    --shadow-strong: 0 12px 30px rgba(60, 0, 120, 0.25);
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    font-family: Inter, system-ui, sans-serif;
+
+    /* Screenshot background style */
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--text);
+  }
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+    padding:28px;
+  }
+
+  .card{
+    width:520px;
+    max-width:calc(100% - 32px);
+    background:var(--card-bg);
+    border-radius:14px;
+    padding:36px 44px;
+    text-align:center;
+    pointer-events:auto;
+    box-shadow:var(--shadow-strong);
+    border:1px solid rgba(0,0,0,0.08);
+    transform-origin:center top;
+  }
+
+  @keyframes popupIn{
+    0%{opacity:0;transform:translateY(-24px) scale(.97);filter:blur(6px);}
+    100%{opacity:1;transform:translateY(0) scale(1);}
+  }
+
+  .card.show{animation:popupIn 580ms ease-out both;}
+
+  h1{
+    margin:0 0 22px;
+    font-size:26px;
+    font-weight:700;
+  }
+
+  form{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    align-items:center;
+  }
+
+  .input{
+    width:360px;
+    max-width:92%;
+    height:46px;
+    border-radius:14px;
+    background:white;
+    border:1.25px solid rgba(0,0,0,0.12);
+    padding:0 14px;
+    display:flex;
+    align-items:center;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+
+  .input input{
+    flex:1;
+    border:0;
+    background:none;
+    font-size:15px;
+    padding:8px 6px;
+    color:#333;
+  }
+
+  .input:focus-within{
+    border-color:var(--focus-violet);
+    box-shadow:0 6px 20px rgba(125,39,232,0.20);
+  }
+
+  .btn{
+    margin-top:10px;
+    width:170px;
+    height:40px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    font-weight:700;
+    color:white;
+
+    /* Screenshot button style - Blue to Violet */
+    background: linear-gradient(90deg, var(--btn1), var(--btn2));
+    
+    box-shadow:0 6px 20px rgba(125,39,232,0.25);
+    transition:0.2s ease;
+  }
+
+  .btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 16px 36px rgba(125,39,232,0.28);
+  }
+
+  .btn:active{
+    transform:translateY(1px) scale(.98);
+  }
+
+  .status{
+    font-size:14px;
+    margin-top:12px;
+    min-height:18px;
+    color:var(--muted);
+  }
+
+  @keyframes shake{
+    0%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(2px)}
+    100%{transform:translateX(0)}
+  }
+
+  .shake{animation:shake 420ms}
+
+</style>
+</head>
+<body>
+
+<div class="overlay">
+  <div class="card" id="loginCard">
+    <h1>Traffic control system</h1>
+
+    <form id="loginForm">
+      <div class="input">
+        <input id="username" type="text" placeholder="Username" required />
+      </div>
+
+      <div class="input">
+        <input id="password" type="password" placeholder="Password" required />
+      </div>
+
+      <button class="btn" type="submit">login</button>
+    </form>
+
+    <div class="status" id="statusText"></div>
+  </div>
+</div>
+
+<script>
+  const card = document.getElementById('loginCard');
+  const form = document.getElementById('loginForm');
+  const statusText = document.getElementById('statusText');
+  const username = document.getElementById('username');
+  const password = document.getElementById('password');
+
+  setTimeout(()=>card.classList.add('show'),200);
+
+  const VALID={username:"admin",password:"admin123"};
+
+  form.addEventListener("submit", e=>{
+    e.preventDefault();
+
+    const u=username.value.trim();
+    const p=password.value.trim();
+
+    if(!u || !p){
+      statusText.textContent="Please fill both fields.";
+      card.classList.add("shake");
+      setTimeout(()=>card.classList.remove("shake"),420);
+      return;
+    }
+
+    statusText.textContent="Checking credentials…";
+
+    setTimeout(()=>{
+      if(u===VALID.username && p===VALID.password){
+        statusText.textContent="Login successful…";
+        setTimeout(()=>window.location.href="dashboard.html",900);
+      }else{
+        statusText.textContent="Invalid username or password.";
+        card.classList.add("shake");
+        setTimeout(()=>card.classList.remove("shake"),420);
+      }
+    },700);
+  });
+</script>
+
+</body>
+</html>
+
+
+
+

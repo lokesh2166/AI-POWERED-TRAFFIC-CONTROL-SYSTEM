@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>North Lane — Live Dashboard</title>
+<style>
+  body{
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+    background:#071029;
+    color:#eaf4ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100vh;
+    margin:0;
+    overflow:hidden;
+  }
+
+  /* ✨ POPUP ANIMATION */
+  .card{
+    width:420px;
+    background:linear-gradient(180deg,#062037,#083051);
+    padding:28px;
+    border-radius:14px;
+    box-shadow:0 18px 40px rgba(2,12,30,0.6);
+    text-align:center;
+
+    opacity:0;
+    transform:scale(0.75);
+    animation:popup 0.55s cubic-bezier(.16,.72,.27,1) forwards;
+  }
+
+  @keyframes popup{
+    0%{opacity:0;transform:scale(0.75) translateY(40px);}
+    100%{opacity:1;transform:scale(1) translateY(0);}
+  }
+
+  .title{font-weight:700;font-size:20px;color:#cfe9ff;margin-bottom:6px}
+  .sub{color:#9fbadf;font-size:13px;margin-bottom:18px}
+  .big{font-size:84px;font-weight:800;color:#fff;margin:6px 0}
+  .hint{font-size:13px;color:#9fbadf;margin-top:8px}
+  .mini{font-size:12px;color:#8aa9c6;margin-top:10px}
+
+  /* View Camera button */
+  .view-camera{
+    display:inline-block;
+    margin-top:14px;
+    padding:8px 12px;
+    border-radius:10px;
+    background:linear-gradient(90deg,#1f8fff,#1aa0ff);
+    color:white;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 8px 20px rgba(26,160,255,0.18);
+    cursor:pointer;
+    transition:0.2s ease;
+  }
+  .view-camera:hover{transform:translateY(-2px);}
+  .view-camera:active{transform:translateY(1px);}
+  .small-note{font-size:12px;color:#86b5d9;margin-top:8px}
+</style>
+</head>
+
+<body>
+  <div class="card">
+    <div class="title">North Lane</div>
+    <div class="sub">Live vehicle count (updates in real time)</div>
+
+    <div id="count" class="big">0</div>
+    <div class="hint" id="status">northlane 0 vehicles</div>
+
+    <div>
+      <a id="viewCameraBtn" class="view-camera" href="camera.html" target="_blank" rel="noopener">
+        View Camera
+      </a>
+      <div class="small-note">Opens the detector (camera preview & control).</div>
+    </div>
+
+    <div class="mini">Last updated: <span id="ts">—</span></div>
+  </div>
+
+<script>
+  const LANE_KEY='lane_counts', LANE_TS=LANE_KEY + '_ts';
+
+  function read(){
+    try{
+      return JSON.parse(localStorage.getItem(LANE_KEY) ||
+      '{"north":0,"south":0,"east":0,"west":0}');
+    } catch(e){
+      return {north:0, south:0, east:0, west:0};
+    }
+  }
+
+  function render(){
+    const c = read();
+    const n = c.north || 0;
+
+    document.getElementById('count').textContent = n;
+    document.getElementById('status').textContent =
+      `northlane ${n} vehicle${n===1?'':'s'}`;
+    document.getElementById('ts').textContent =
+      new Date().toLocaleTimeString();
+  }
+
+  // Popup camera window
+  document.getElementById('viewCameraBtn').addEventListener('click', function(ev){
+    ev.preventDefault();
+    const url = this.href;
+    const w = 900, h = 600;
+    const left = Math.max(0, (screen.width - w) / 2);
+    const top = Math.max(0, (screen.height - h) / 2);
+
+    const win = window.open(
+      url,
+      '_blank',
+      `toolbar=0,location=0,status=0,menubar=0,scrollbars=1,resizable=1,
+       width=${w},height=${h},left=${left},top=${top}`
+    );
+
+    if(!win){ window.open(url, '_blank', 'noopener'); }
+    else { try{ win.focus(); } catch(e){} }
+  });
+
+  window.addEventListener('load', render);
+  window.addEventListener('storage', (e)=>{
+    if(e.key === LANE_KEY || e.key === LANE_TS) render();
+  });
+
+  // periodic fallback update
+  setInterval(render, 800);
+</script>
+</body>
+</html>

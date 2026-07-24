@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Traffic control system - Fullscreen Dashboard</title>
+  <style>
+    :root{
+      /* MAIN VIOLET THEME (same as your violation page) */
+      --violet-dark: #7D27E8;
+      --violet-light: #C44BF5;
+      --violet-soft: #E7D8FF;
+      --white-panel: #F5F3F7;
+      --white-card: #FFFFFF;
+
+      /* colored buttons from violation page */
+      --btn-blue: #5DA9FF;
+      --btn-gold: #D6A522;
+      --btn-purple: #7D27E8;
+      --btn-violet: #C44BF5;
+
+      --logout: #FF573F;
+
+      --text:#222;
+      --shadow:0 8px 20px rgba(0,0,0,0.10);
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      width:100%;
+      overflow:hidden;
+      background:linear-gradient(180deg,var(--violet-dark),var(--violet-light));
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
+      color:var(--text);
+    }
+
+    .app{
+      background:var(--white-panel);
+      width:100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      overflow:auto;
+    }
+
+    /* HEADER */
+    header{
+      background:linear-gradient(90deg,var(--violet-dark),var(--violet-light));
+      color:white;
+      padding:18px 28px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    header h1{
+      font-size:20px;
+      margin:0;
+    }
+
+    .top-actions{
+      display:flex;
+      gap:12px;
+    }
+
+    .pill{
+      padding:8px 14px;
+      border-radius:22px;
+      background:var(--violet-soft);
+      color:var(--violet-dark);
+      font-weight:700;
+      cursor:pointer;
+      border:1px solid rgba(0,0,0,0.05);
+    }
+
+    .pill.logout{
+      background:linear-gradient(90deg,#ff8a6b,var(--logout));
+      color:white;
+    }
+
+    /* NAV BUTTONS */
+    nav{
+      display:flex;
+      gap:18px;
+      padding:18px;
+    }
+
+    .nav-btn{
+      background:#FFFFFF;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,0.06);
+      padding:12px 20px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:var(--shadow);
+    }
+
+    /* CONTENT AREA */
+    .content{
+      padding:28px;
+      overflow-y:auto;
+      flex:1;
+    }
+
+    h2{
+      margin:6px 0 22px;
+      font-weight:600;
+    }
+
+    .hint{
+      font-size:13px;
+      color:#777;
+      margin-bottom:10px;
+    }
+
+    /* GRID */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:28px;
+      margin-bottom:32px;
+    }
+
+    /* LANE & SYSTEM BOXES — updated to violet gradient */
+    .box{
+      background: linear-gradient(180deg,var(--violet-dark),var(--violet-light));
+      color:white;
+      border-radius:12px;
+      min-height:90px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      opacity:0;
+      transform:translateY(20px);
+      transition:.35s ease;
+    }
+
+    .box.small{
+      min-height:70px;
+    }
+
+    .box.visible{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .box:hover{
+      transform:translateY(-6px);
+      box-shadow:0 16px 30px rgba(125,39,232,0.25);
+    }
+
+    .box .title{
+      font-weight:600;
+    }
+
+    .box .value{
+      font-size:22px;
+      font-weight:700;
+    }
+
+    /* FOOTER BAR */
+    .bottom-accent{
+      height:52px;
+      background:linear-gradient(90deg,var(--violet-dark),var(--violet-light));
+      border-radius:10px 10px 0 0;
+      margin-top:28px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Traffic control system</h1>
+
+      <div class="top-actions">
+        <div class="pill">Admin</div>
+        <div class="pill logout" onclick="window.location.href='login.html'">Logout</div>
+      </div>
+    </header>
+
+    <nav>
+      <button class="nav-btn" onclick="window.location.href='dashboard.html'">Dash Board</button>
+      <button class="nav-btn" onclick="window.location.href='manual.html'">Manual Control</button>
+      <button class="nav-btn" onclick="window.location.href='Violation.html'">Violations</button>
+      <button class="nav-btn" onclick="window.location.href='activity.html'">Activity logs</button>
+    </nav>
+
+    <main class="content">
+      <section>
+        <h2>Traffic Flow Monitor</h2>
+        <div class="hint">Click any lane box to open details</div>
+
+        <div class="grid">
+          <div class="box"onclick="window.location.href='north.html'"><div class="title">North Lane</div><div class="value">12</div><div class="title">click here</div></div>
+          <div class="box"onclick="window.location.href='south.html'"><div class="title">South Lane </div><div class="value">17</div><div class="title">click here</div></div>
+          <div class="box"onclick="window.location.href='east.html'"><div class="title">East Lane</div><div class="value">8</div><div class="title">click here</div></div>
+          <div class="box"onclick="window.location.href='west.html'"><div class="title">West Lane</div><div class="value">14</div><div class="title">click here</div></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>System overview</h2>
+
+        <div class="grid">
+          <div class="box small"><div class="title">Total Violation Today</div><div class="value">12</div></div>
+          <div class="box small"><div class="title">Fines Collected</div><div class="value">₹3,600</div></div>
+          <div class="box small"><div class="title">Active Detections</div><div class="value">3</div></div>
+          <div class="box small"><div class="title">Reserved</div><div class="value">—</div></div>
+        </div>
+      </section>
+
+      <div class="bottom-accent"></div>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener('load',()=>{
+      document.querySelectorAll('.box').forEach((b,i)=>{
+        setTimeout(()=> b.classList.add('visible'), i * 120);
+      });
+    });
+  </script>
+</body>
+</html>
