@@ -1,153 +1,143 @@
-# AI-POWERED-TRAFFIC-CONTROL-SYSTEM
-# 🚦 AI-Powered Smart Traffic Control System
+# 🚦 AI-Powered Traffic Control System
+
+An AI-based Smart Traffic Control System that uses **Artificial Intelligence, Computer Vision, and IoT** to optimize traffic signals based on real-time vehicle density.
+
+---
 
 ## 🏆 Achievement
 
 🥇 **Winner – CSTF 2025 (Coimbatore)**
 
-This project was awarded **1st Place at the CSTF 2025 Competition held in Coimbatore** for its innovative approach to solving urban traffic congestion using Artificial Intelligence and Computer Vision.
+This project won **1st Place at CSTF 2025** for developing an innovative AI-driven traffic management solution using Computer Vision and Artificial Intelligence.
 
 ---
 
-# 📌 Project Overview
+## 📌 Project Overview
 
-The **AI-Powered Smart Traffic Control System** is an intelligent traffic management solution that uses **Artificial Intelligence, Computer Vision, and IoT** to optimize traffic signal timing based on real-time vehicle density.
+Traditional traffic lights operate using fixed time intervals, which often causes unnecessary waiting, congestion, fuel wastage, and increased pollution.
 
-Unlike traditional traffic signals that operate on fixed timers, this system dynamically adjusts the green signal duration by detecting the number of vehicles waiting at each road using a camera. The result is reduced traffic congestion, improved traffic flow, shorter waiting times, and better road efficiency.
-
-This project demonstrates how AI can be integrated with traffic infrastructure to build smarter and more efficient cities.
+This project solves these problems by detecting the number of vehicles on each road using AI and automatically adjusting traffic signal timings in real time.
 
 ---
 
-# 🎯 Problem Statement
+## 🎯 Objectives
 
-Conventional traffic lights use fixed time intervals regardless of traffic density, causing:
-
-- Long waiting times
-- Traffic congestion
-- Fuel wastage
-- Increased air pollution
-- Poor emergency vehicle movement
-
-Our solution eliminates these problems through intelligent, real-time traffic analysis.
+- Reduce traffic congestion
+- Minimize waiting time
+- Improve traffic flow
+- Save fuel consumption
+- Support Smart City infrastructure
+- Improve emergency vehicle movement
 
 ---
 
-# 💡 Solution
+## ✨ Features
 
-The system continuously captures live video using a camera.
-
-An AI object detection model identifies and counts vehicles on each road.
-
-Based on the vehicle count, the system automatically calculates the required green signal duration.
-
-The Arduino controller then switches traffic signals accordingly without human intervention.
-
----
-
-# ⚙️ Features
-
-- 🚗 Real-time Vehicle Detection
-- 🤖 AI-based Traffic Density Analysis
+- 🚗 Real-Time Vehicle Detection
+- 🤖 AI-Based Traffic Density Analysis
 - 📹 Live Camera Monitoring
-- 🚦 Automatic Signal Timing
-- 📊 Dynamic Traffic Dashboard
-- 🔄 Four-Way Junction Control
-- ⚡ Faster Traffic Flow
-- 🌱 Reduced Fuel Consumption
-- 🌍 Environment Friendly
-- 💰 Low Cost Implementation
-- 📈 Scalable Smart City Solution
+- 🚦 Automatic Traffic Signal Control
+- 📊 Live Traffic Dashboard
+- 🔄 Four-Way Junction Management
+- ⚡ Dynamic Green Signal Timing
+- 🌱 Environment-Friendly Solution
+- 💰 Low-Cost Implementation
+- 📈 Scalable Smart City System
 
 ---
 
-# 🛠 Technologies Used
+## 🛠️ Technologies Used
 
-## Frontend
+### Frontend
 - HTML5
 - CSS3
 - JavaScript
 
-## Artificial Intelligence
+### Artificial Intelligence
 - TensorFlow.js
 - COCO-SSD Object Detection
 
-## Hardware
+### Hardware
 - Arduino UNO
 - USB Camera / DroidCam
 - LED Traffic Signals
 - Breadboard
 - Jumper Wires
 
-## Communication
+### Communication
 - Web Serial API
 
 ---
 
-# 🔄 System Workflow
+## 🔄 System Workflow
 
 1. Camera captures live traffic.
 2. AI detects vehicles using TensorFlow.js COCO-SSD.
-3. Vehicle count is calculated for each road.
+3. Vehicle count is calculated.
 4. Traffic density is analyzed.
-5. Green signal duration is determined dynamically.
+5. Green signal timing is generated dynamically.
 6. Arduino receives traffic data.
-7. Traffic lights change automatically.
-8. Process repeats continuously in real time.
+7. Traffic lights switch automatically.
+8. The process repeats continuously.
 
 ---
 
-# 📂 Project Structure
+## 📂 Project Structure
 
 ```
-Traffic-Control-System/
+AI-POWERED-TRAFFIC-CONTROL-SYSTEM/
 │
 ├── index.html
+├── login.html
+├── dashboard.html
+├── camera.html
+├── camera1.html
+├── camera2.html
+├── camera3.html
+├── Activity.html
+├── Violation.html
+├── north.html
+├── south.html
+├── east.html
+├── west.html
+├── manual.html
 ├── style.css
 ├── script.js
-├── ai/
-│   ├── coco-ssd
-│   └── tensorflow.js
-├── images/
-├── arduino/
-│   └── traffic_controller.ino
-├── assets/
 └── README.md
 ```
 
 ---
 
-# 🚀 Advantages
+## 🚀 Advantages
 
 - Reduces traffic congestion
 - Saves travel time
-- Minimizes fuel consumption
-- Reduces carbon emissions
-- Improves emergency vehicle movement
-- Fully automatic traffic management
+- Reduces fuel consumption
+- Lowers carbon emissions
+- Improves emergency response
+- Fully automated operation
 - Easy to deploy
-- Cost-effective solution
+- Cost-effective
 
 ---
 
-# 📈 Future Enhancements
+## 🔮 Future Enhancements
 
-- Emergency Vehicle Priority Detection
-- Ambulance Detection
-- Fire Engine Priority
-- Number Plate Recognition (ANPR)
-- Cloud Dashboard
-- AI Traffic Prediction
-- Smart City Integration
-- Mobile Monitoring Application
-- CCTV Integration
-- IoT Cloud Analytics
+- 🚑 Ambulance Detection
+- 🚒 Fire Engine Priority
+- 🚓 Emergency Vehicle Detection
+- 🔢 Automatic Number Plate Recognition (ANPR)
+- ☁️ Cloud Dashboard
+- 📱 Mobile Application
+- 📊 AI Traffic Prediction
+- 📷 CCTV Integration
+- 🌐 Smart City Integration
 
 ---
 
-# 🎓 Learning Outcomes
+## 🎓 Learning Outcomes
 
-Through this project, we gained practical experience in:
+This project provided hands-on experience in:
 
 - Artificial Intelligence
 - Computer Vision
@@ -155,27 +145,38 @@ Through this project, we gained practical experience in:
 - Object Detection
 - Arduino Programming
 - IoT Integration
-- Smart City Technologies
 - Web Development
 - Real-Time Data Processing
 - Hardware–Software Communication
 
 ---
 
-# 👨‍💻 Developed By
+## ▶️ How to Run
+
+1. Clone this repository.
+2. Open `index.html` in your browser.
+3. Allow camera access.
+4. Start traffic monitoring.
+5. Connect the Arduino (optional) for hardware integration.
+
+---
+
+## 👨‍💻 Developed By
 
 **Lokeshwaran K**
 
 B.E. Computer Science Engineering
 
----
-
-# 🏅 Award
-
-🏆 **Winner – CSTF 2025, Coimbatore**
-
-Recognized for developing an innovative AI-based intelligent traffic management system that addresses real-world traffic congestion through Computer Vision and Artificial Intelligence.
+GitHub: **https://github.com/lokesh2166**
 
 ---
 
-## ⭐ If you like this project, don't forget to star this repository!
+## 📜 License
+
+This project is developed for educational, research, and demonstration purposes.
+
+---
+
+## ⭐ Support
+
+If you found this project useful, please **⭐ Star** this repository and share it with others.
