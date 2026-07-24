@@ -164,7 +164,7 @@ Through this project, we gained practical experience in:
 
 # 👨‍💻 Developed By
 
-**Lokeshwaran K ,Anish K**
+**Lokeshwaran K**
 
 B.E. Computer Science Engineering
 
